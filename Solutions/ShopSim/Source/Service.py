@@ -9,11 +9,9 @@ import hashlib
 import string
 
 class Service(metaclass=abc.ABCMeta):
-    def __init__(self, name, thisPort, nodePort):
+    def __init__(self, name, thisPort):
         self.thisPort = thisPort
-        self.nodePort = nodePort
         self.name = name
-        self.apis = []
         self.running = True
 
     @abc.abstractmethod
@@ -62,32 +60,16 @@ class Service(metaclass=abc.ABCMeta):
             if done == True:
                 break
 
-        if 'url' in parameterMap and parameterMap['url'] == '/Kill':
-            self.running = False
-            headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-            requests.post("http://127.0.0.1:" + str(self.thisPort) + "/Kill", data = '', headers = headers)
-        else:
-            got = {}
-            got["SUCCEED"] = True
-            got["DATA"] = self.Execute(parameterMap)
+        got = {}
+        got["SUCCEED"] = True
+        got["DATA"] = self.Execute(parameterMap)
 
-            header = 'HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n'
-            body = json.dumps(got)
-            clientSocket.send((header + body).encode())
-            clientSocket.close()
-
-    def Initialize(self):
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        data = {}
-        data['APIS'] = self.apis
-        data['DOMAIN'] = self.name
-        data['PORT'] = self.thisPort
-        value = json.dumps(data).encode()
-        requests.post("http://127.0.0.1:" + str(self.nodePort) + "/Launch", data = value, headers = headers)
+        header = 'HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n'
+        body = json.dumps(got)
+        clientSocket.send((header + body).encode())
+        clientSocket.close()
 
     def Run(self):
-        self.Initialize()
-
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('127.0.0.1', int(self.thisPort)))
         s.listen(5)
@@ -101,10 +83,5 @@ class Service(metaclass=abc.ABCMeta):
             
             httpThread = threading.Thread(target = self.HttpThread, args = (clientSocket, clientAddress))
             httpThread.start()
-        
-    def Append(self, apiName):
-        api = {}
-        api['API'] = apiName
-        self.apis.append(api)
 
     
